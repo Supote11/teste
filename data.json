@@ -1,0 +1,29 @@
+{
+  "sads": [
+    {
+      "id": 1,
+      "responsavel": "Aaron",
+      "ramal": "100",
+      "departamento": "Telefonia",
+      "piso": "Térreo"
+    }
+  ],
+  "habt": [
+    {
+      "id": 1,
+      "responsavel": "Acacio De Sousa Abreu Jr",
+      "ramal": "207",
+      "departamento": "Secretário",
+      "piso": "2º"
+    }
+  ],
+  "geral": [
+    {
+      "id": 1,
+      "equipamento": "CRAS Jardim Belva",
+      "endereco": "Rua Casemiro de Abreu, 329 – Jd. Belval7",
+      "telefone": "3164-9738",
+      "coordenador": "Fabiana Turina"
+    }
+  ]
+}

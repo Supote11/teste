@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Ramais - HABT</title>
+    <link rel="icon" type="image/png" href="Design_sem_nome__2_-removebg-preview.png">
+    <style>
+        /* COLE AQUI TODOS OS ESTILOS DO index.html (a parte completa do CSS) */
+        /* É exatamente a mesma estilização */
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Pesquisar">
+    </div>
+    
+    <h1><img src="habitacao_preto.png" alt="Equação" style="max-width: 100%; height: auto;"></h1>
+
+    <div class="pagination">
+        <a href="index.html">SADS</a>
+        <a href="habt.html" class="active">HABT</a>
+        <a href="geral.html">GERAL</a>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-add" onclick="openAddModal()">+ Adicionar Usuário</button>
+        <button class="btn btn-sync" onclick="forceSync()" id="syncButton">🔄 Sincronizar</button>
+    </div>
+
+    <div id="syncStatus" class="sync-status" style="display: none;"></div>
+
+    <div id="loading" class="loading">Carregando dados...</div>
+
+    <table id="phoneTable" style="display: none;">
+        <thead>
+            <tr>
+                <th>Responsavel</th>
+                <th>Ramal</th>
+                <th>Departamento</th>
+                <th>Piso</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- Dados serão carregados via JavaScript -->
+        </tbody>
+    </table>
+
+    <div id="noData" class="no-data" style="display: none;">
+        Nenhum dado encontrado.
+    </div>
+
+    <!-- Modal para Adicionar/Editar -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Adicionar Usuário</h2>
+            <form id="userForm">
+                <div class="form-group">
+                    <label for="responsavel">Responsável:</label>
+                    <input type="text" id="responsavel" required>
+                </div>
+                <div class="form-group">
+                    <label for="ramal">Ramal:</label>
+                    <input type="text" id="ramal" required>
+                </div>
+                <div class="form-group">
+                    <label for="departamento">Departamento:</label>
+                    <input type="text" id="departamento" required>
+                </div>
+                <div class="form-group">
+                    <label for="piso">Piso:</label>
+                    <input type="text" id="piso" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-save">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="data-manager.js"></script>
+    <script>
+        const dataManager = new DataManager();
+        let currentEditingId = null;
+        const modal = document.getElementById('userModal');
+        const userForm = document.getElementById('userForm');
+        let hasUnsavedChanges = false;
+
+        // Carregar dados HABT
+        async function loadHABTData() {
+            const tableBody = document.getElementById('tableBody');
+            const loadingElement = document.getElementById('loading');
+            const tableElement = document.getElementById('phoneTable');
+            const noDataElement = document.getElementById('noData');
+            
+            showSyncStatus('Carregando dados...', 'warning');
+            
+            try {
+                let data = await dataManager.loadData();
+                
+                if (!data) {
+                    data = dataManager.loadFromLocalStorage();
+                    if (data) {
+                        showSyncStatus('Usando dados locais (offline)', 'warning');
+                    }
+                }
+                
+                tableBody.innerHTML = '';
+                
+                if (data && data.habt && data.habt.length > 0) {
+                    const habtData = data.habt;
+                    
+                    habtData.sort((a, b) => a.ramal - b.ramal);
+                    
+                    habtData.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.responsavel || ''}</td>
+                            <td>${item.ramal || ''}</td>
+                            <td>${item.departamento || ''}</td>
+                            <td>${item.piso || ''}</td>
+                            <td>
+                                <button class="btn btn-edit" onclick="editUser(${item.id})">Editar</button>
+                                <button class="btn btn-delete" onclick="deleteUser(${item.id})">Excluir</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    
+                    loadingElement.style.display = 'none';
+                    tableElement.style.display = 'table';
+                    noDataElement.style.display = 'none';
+                    showSyncStatus('Dados carregados com sucesso', 'success');
+                } else {
+                    loadingElement.style.display = 'none';
+                    tableElement.style.display = 'none';
+                    noDataElement.style.display = 'block';
+                    showSyncStatus('Nenhum dado encontrado', 'warning');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                loadingElement.innerHTML = 'Erro ao carregar dados.';
+                tableElement.style.display = 'none';
+                showSyncStatus('Erro ao carregar dados', 'error');
+            }
+        }
+
+        // Funções de sincronização (iguais ao index.html)
+        function showSyncStatus(message, type = 'info') {
+            const statusElement = document.getElementById('syncStatus');
+            statusElement.textContent = message;
+            statusElement.className = `sync-status sync-${type}`;
+            statusElement.style.display = 'block';
+            
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        async function forceSync() {
+            showSyncStatus('Sincronizando...', 'warning');
+            const success = await dataManager.saveData();
+            
+            if (success) {
+                showSyncStatus('Dados sincronizados com sucesso!', 'success');
+                hasUnsavedChanges = false;
+            } else {
+                showSyncStatus('Alterações salvas localmente (use GitHub para sincronizar)', 'warning');
+            }
+        }
+
+        // Modal functions
+        function openAddModal() {
+            currentEditingId = null;
+            document.getElementById('modalTitle').textContent = 'Adicionar Usuário';
+            userForm.reset();
+            modal.style.display = 'block';
+        }
+
+        function editUser(userId) {
+            currentEditingId = userId;
+            const userData = dataManager.data.habt.find(item => item.id === userId);
+            
+            if (userData) {
+                document.getElementById('modalTitle').textContent = 'Editar Usuário';
+                document.getElementById('responsavel').value = userData.responsavel || '';
+                document.getElementById('ramal').value = userData.ramal || '';
+                document.getElementById('departamento').value = userData.departamento || '';
+                document.getElementById('piso').value = userData.piso || '';
+                modal.style.display = 'block';
+            }
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            currentEditingId = null;
+        }
+
+        async function deleteUser(userId) {
+            if (confirm('Tem certeza que deseja excluir este usuário?')) {
+                dataManager.data.habt = dataManager.data.habt.filter(item => item.id !== userId);
+                hasUnsavedChanges = true;
+                
+                await loadHABTData();
+                showSyncStatus('Usuário excluído (alterações não salvas)', 'warning');
+            }
+        }
+
+        // Form submission
+        userForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const userData = {
+                responsavel: document.getElementById('responsavel').value,
+                ramal: document.getElementById('ramal').value,
+                departamento: document.getElementById('departamento').value,
+                piso: document.getElementById('piso').value
+            };
+
+            if (currentEditingId) {
+                const index = dataManager.data.habt.findIndex(item => item.id === currentEditingId);
+                if (index !== -1) {
+                    dataManager.data.habt[index] = { ...dataManager.data.habt[index], ...userData };
+                }
+                showSyncStatus('Usuário atualizado (alterações não salvas)', 'warning');
+            } else {
+                const newId = Math.max(...dataManager.data.habt.map(item => item.id), 0) + 1;
+                dataManager.data.habt.push({ id: newId, ...userData });
+                showSyncStatus('Usuário adicionado (alterações não salvas)', 'warning');
+            }
+
+            hasUnsavedChanges = true;
+            
+            await loadHABTData();
+            closeModal();
+        });
+
+        window.addEventListener('beforeunload', (e) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHABTData();
+            setupSearch();
+        });
+
+        function setupSearch() {
+            const searchInput = document.getElementById("searchInput");
+            const table = document.getElementById("phoneTable");
+            const rows = table.getElementsByTagName("tr");
+
+            searchInput.addEventListener("keyup", function () {
+                const filter = searchInput.value.toLowerCase();
+
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    const cells = row.getElementsByTagName("td");
+                    let found = false;
+
+                    for (let j = 0; j < cells.length - 1; j++) {
+                        const cellText = cells[j].textContent.toLowerCase();
+                        if (cellText.includes(filter)) {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    row.style.display = found ? "" : "none";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+

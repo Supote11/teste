@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Ramais - GERAL</title>
+    <link rel="icon" type="image/png" href="Design_sem_nome__2_-removebg-preview.png">
+    <style>
+        .logo{
+            position: fixed;
+            top: 100px;
+            left: 150px;
+            width: 90px;
+            height:auto;
+        }
+        table{
+            width:90%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        body{
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin:20px;
+            font-size: 30px;
+        }
+        th, td{
+            border: 1px solid #999;
+            padding:10px;
+            text-align: center;
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+        }
+        th{
+            background-color: #d3d3d3;
+            font-weight: bold;
+        }
+        .search-container {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 100;
+        }
+        .search-container input[type="text"] {
+          padding: 8px 12px;
+          font-size: 20px;
+          border: 1px solid #0a0101;
+          border-radius: 10px;
+          width: 220px;
+        }
+        .pagination {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .pagination a {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 8px 15px;
+            background: #3f2c50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .pagination a.active {
+            background: #42d66e;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+        }
+        .action-buttons {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .btn-add {
+            background: #42d66e;
+            color: white;
+        }
+        .btn-edit {
+            background: #ffa500;
+            color: white;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .btn-delete {
+            background: #ff4444;
+            color: white;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .btn-save {
+            background: #4285f4;
+            color: white;
+        }
+        .btn-cancel {
+            background: #999;
+            color: white;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 50%;
+            max-width: 500px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .form-actions {
+            text-align: right;
+            margin-top: 20px;
+        }
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            color: #666;
+        }
+        .sync-status {
+            text-align: center;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .sync-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .sync-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .sync-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .btn-sync {
+            background: #17a2b8;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Pesquisar">
+    </div>
+    
+    <h1><img src="ASSISTÊNCIA E DESENVOLVIMENTO SOCIAL - ESCURO (2).PNG" alt="Logo lista de ramais" width="450" height="70"></h1>
+
+    <div class="pagination">
+        <a href="index.html">SADS</a>
+        <a href="habt.html">HABT</a>
+        <a href="geral.html" class="active">GERAL</a>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-add" onclick="openAddModal()">+ Adicionar Equipamento</button>
+        <button class="btn btn-sync" onclick="forceSync()" id="syncButton">🔄 Sincronizar</button>
+    </div>
+
+    <div id="syncStatus" class="sync-status" style="display: none;"></div>
+
+    <div id="loading" class="loading">Carregando dados...</div>
+
+    <table id="phoneTable" style="display: none;">
+        <thead>
+            <tr>
+                <th>Equipamento</th>
+                <th>Endereço</th>
+                <th>Telefone</th>
+                <th>Coordenador</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- Dados serão carregados via JavaScript -->
+        </tbody>
+    </table>
+
+    <div id="noData" class="no-data" style="display: none;">
+        Nenhum dado encontrado.
+    </div>
+
+    <!-- Modal para Adicionar/Editar -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Adicionar Equipamento</h2>
+            <form id="userForm">
+                <div class="form-group">
+                    <label for="equipamento">Equipamento:</label>
+                    <input type="text" id="equipamento" required>
+                </div>
+                <div class="form-group">
+                    <label for="endereco">Endereço:</label>
+                    <input type="text" id="endereco" required>
+                </div>
+                <div class="form-group">
+                    <label for="telefone">Telefone:</label>
+                    <input type="text" id="telefone" required>
+                </div>
+                <div class="form-group">
+                    <label for="coordenador">Coordenador:</label>
+                    <input type="text" id="coordenador" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-save">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="data-manager.js"></script>
+    <script>
+        const dataManager = new DataManager();
+        let currentEditingId = null;
+        const modal = document.getElementById('userModal');
+        const userForm = document.getElementById('userForm');
+        let hasUnsavedChanges = false;
+
+        // Carregar dados GERAL
+        async function loadGeralData() {
+            const tableBody = document.getElementById('tableBody');
+            const loadingElement = document.getElementById('loading');
+            const tableElement = document.getElementById('phoneTable');
+            const noDataElement = document.getElementById('noData');
+            
+            showSyncStatus('Carregando dados...', 'warning');
+            
+            try {
+                let data = await dataManager.loadData();
+                
+                if (!data) {
+                    data = dataManager.loadFromLocalStorage();
+                    if (data) {
+                        showSyncStatus('Usando dados locais (offline)', 'warning');
+                    }
+                }
+                
+                tableBody.innerHTML = '';
+                
+                if (data && data.geral && data.geral.length > 0) {
+                    const geralData = data.geral;
+                    
+                    geralData.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.equipamento || ''}</td>
+                            <td>${item.endereco || ''}</td>
+                            <td>${item.telefone || ''}</td>
+                            <td>${item.coordenador || ''}</td>
+                            <td>
+                                <button class="btn btn-edit" onclick="editUser(${item.id})">Editar</button>
+                                <button class="btn btn-delete" onclick="deleteUser(${item.id})">Excluir</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    
+                    loadingElement.style.display = 'none';
+                    tableElement.style.display = 'table';
+                    noDataElement.style.display = 'none';
+                    showSyncStatus('Dados carregados com sucesso', 'success');
+                } else {
+                    loadingElement.style.display = 'none';
+                    tableElement.style.display = 'none';
+                    noDataElement.style.display = 'block';
+                    showSyncStatus('Nenhum dado encontrado', 'warning');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                loadingElement.innerHTML = 'Erro ao carregar dados.';
+                tableElement.style.display = 'none';
+                showSyncStatus('Erro ao carregar dados', 'error');
+            }
+        }
+
+        // Funções de sincronização
+        function showSyncStatus(message, type = 'info') {
+            const statusElement = document.getElementById('syncStatus');
+            statusElement.textContent = message;
+            statusElement.className = `sync-status sync-${type}`;
+            statusElement.style.display = 'block';
+            
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        async function forceSync() {
+            showSyncStatus('Sincronizando...', 'warning');
+            const success = await dataManager.saveData();
+            
+            if (success) {
+                showSyncStatus('Dados sincronizados com sucesso!', 'success');
+                hasUnsavedChanges = false;
+            } else {
+                showSyncStatus('Alterações salvas localmente (use GitHub para sincronizar)', 'warning');
+            }
+        }
+
+        // Modal functions
+        function openAddModal() {
+            currentEditingId = null;
+            document.getElementById('modalTitle').textContent = 'Adicionar Equipamento';
+            userForm.reset();
+            modal.style.display = 'block';
+        }
+
+        function editUser(userId) {
+            currentEditingId = userId;
+            const userData = dataManager.data.geral.find(item => item.id === userId);
+            
+            if (userData) {
+                document.getElementById('modalTitle').textContent = 'Editar Equipamento';
+                document.getElementById('equipamento').value = userData.equipamento || '';
+                document.getElementById('endereco').value = userData.endereco || '';
+                document.getElementById('telefone').value = userData.telefone || '';
+                document.getElementById('coordenador').value = userData.coordenador || '';
+                modal.style.display = 'block';
+            }
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            currentEditingId = null;
+        }
+
+        async function deleteUser(userId) {
+            if (confirm('Tem certeza que deseja excluir este equipamento?')) {
+                dataManager.data.geral = dataManager.data.geral.filter(item => item.id !== userId);
+                hasUnsavedChanges = true;
+                
+                await loadGeralData();
+                showSyncStatus('Equipamento excluído (alterações não salvas)', 'warning');
+            }
+        }
+
+        // Form submission
+        userForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const userData = {
+                equipamento: document.getElementById('equipamento').value,
+                endereco: document.getElementById('endereco').value,
+                telefone: document.getElementById('telefone').value,
+                coordenador: document.getElementById('coordenador').value
+            };
+
+            if (currentEditingId) {
+                const index = dataManager.data.geral.findIndex(item => item.id === currentEditingId);
+                if (index !== -1) {
+                    dataManager.data.geral[index] = { ...dataManager.data.geral[index], ...userData };
+                }
+                showSyncStatus('Equipamento atualizado (alterações não salvas)', 'warning');
+            } else {
+                const newId = Math.max(...dataManager.data.geral.map(item => item.id), 0) + 1;
+                dataManager.data.geral.push({ id: newId, ...userData });
+                showSyncStatus('Equipamento adicionado (alterações não salvas)', 'warning');
+            }
+
+            hasUnsavedChanges = true;
+            
+            await loadGeralData();
+            closeModal();
+        });
+
+        window.addEventListener('beforeunload', (e) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGeralData();
+            setupSearch();
+        });
+
+        function setupSearch() {
+            const searchInput = document.getElementById("searchInput");
+            const table = document.getElementById("phoneTable");
+            const rows = table.getElementsByTagName("tr");
+
+            searchInput.addEventListener("keyup", function () {
+                const filter = searchInput.value.toLowerCase();
+
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    const cells = row.getElementsByTagName("td");
+                    let found = false;
+
+                    for (let j = 0; j < cells.length - 1; j++) {
+                        const cellText = cells[j].textContent.toLowerCase();
+                        if (cellText.includes(filter)) {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    row.style.display = found ? "" : "none";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
