@@ -1,0 +1,46 @@
+name: Update JSON Data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * *'
+  push:
+    paths:
+      - 'data.json'
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Configurar Git
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        
+    - name: Atualizar data.json
+      run: |
+        # Criar arquivo JavaScript temporário
+        cat > update.js << 'EOF'
+        const fs = require('fs');
+        try {
+          const data = JSON.parse(fs.readFileSync('data.json', 'utf8'));
+          // Adicionar timestamp de atualização
+          data.last_updated = new Date().toISOString();
+          fs.writeFileSync('data.json', JSON.stringify(data, null, 2));
+          console.log('✅ data.json atualizado com sucesso!');
+        } catch (error) {
+          console.error('❌ Erro:', error);
+        }
+        EOF
+        node update.js
+      
+    - name: Commit e Push se houver mudanças
+      run: |
+        git add data.json
+        git diff --staged --quiet || (git commit -m "🤖 Auto-update: Atualizar data.json" && git push)
